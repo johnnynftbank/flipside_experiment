@@ -12,29 +12,27 @@ WITH top_5_programs AS (
 fee_stats AS (
   SELECT 
     s.swap_program,
-    -- Fee 구간 분류 (더 세분화된 구간)
+    -- Fee 구간 분류 (SOL 단위로 표현)
     CASE 
-      WHEN s.fee_amount = 0 THEN '0 (No Fee)'
-      WHEN s.fee_amount < 0.000005 THEN '< 0.000005 SOL'
-      WHEN s.fee_amount = 0.000005 THEN '0.000005 SOL (Base Fee)'
-      WHEN s.fee_amount <= 0.00001 THEN '0.000005-0.00001 SOL'
-      WHEN s.fee_amount <= 0.00005 THEN '0.00001-0.00005 SOL'
-      WHEN s.fee_amount <= 0.0001 THEN '0.00005-0.0001 SOL'
-      WHEN s.fee_amount <= 0.0005 THEN '0.0001-0.0005 SOL'
-      WHEN s.fee_amount <= 0.001 THEN '0.0005-0.001 SOL'
-      WHEN s.fee_amount <= 0.005 THEN '0.001-0.005 SOL'
-      WHEN s.fee_amount <= 0.01 THEN '0.005-0.01 SOL'
-      WHEN s.fee_amount <= 0.05 THEN '0.01-0.05 SOL'
-      ELSE '> 0.05 SOL'
+      WHEN t.fee = 0.000005 THEN '0.000005 SOL (기본 수수료)'
+      WHEN t.fee > 0.000005 AND t.fee <= 0.000006 THEN '0.000005-0.000006 SOL (기본 수수료 +20% 이내)'
+      WHEN t.fee > 0.000006 AND t.fee <= 0.00001 THEN '0.000006-0.00001 SOL (기본 수수료 2배 이내)'
+      WHEN t.fee > 0.00001 AND t.fee <= 0.00005 THEN '0.00001-0.00005 SOL (기본 수수료 2-10배)'
+      WHEN t.fee > 0.00005 AND t.fee <= 0.0001 THEN '0.00005-0.0001 SOL (기본 수수료 10-20배)'
+      WHEN t.fee > 0.0001 AND t.fee <= 0.001 THEN '0.0001-0.001 SOL (기본 수수료 20-200배)'
+      WHEN t.fee > 0.001 THEN '> 0.001 SOL (기본 수수료 200배 초과)'
+      ELSE '< 0.000005 SOL (기본 수수료 미만)'
     END as fee_range,
     COUNT(*) as swap_count,
     COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY s.swap_program) as percentage,
-    AVG(s.fee_amount) as avg_fee,
-    MIN(s.fee_amount) as min_fee,
-    MAX(s.fee_amount) as max_fee
+    AVG(t.fee) as avg_fee,
+    MIN(t.fee) as min_fee,
+    MAX(t.fee) as max_fee
   FROM solana.defi.fact_swaps s
-  JOIN top_5_programs t ON s.swap_program = t.swap_program
-  WHERE block_timestamp >= DATEADD(day, -30, CURRENT_TIMESTAMP())
+  JOIN solana.core.fact_transactions t ON s.tx_id = t.tx_id
+  JOIN top_5_programs p ON s.swap_program = p.swap_program
+  WHERE s.block_timestamp >= '2024-03-01' 
+    AND s.block_timestamp < '2024-04-01'
   GROUP BY 1, 2
 )
 SELECT 
@@ -42,7 +40,7 @@ SELECT
   fee_range,
   swap_count,
   ROUND(percentage, 2) as percentage_in_program,
-  ROUND(avg_fee, 9) as avg_fee_sol,  -- 더 많은 소수점 자리 표시
+  ROUND(avg_fee, 9) as avg_fee_sol,
   ROUND(min_fee, 9) as min_fee_sol,
   ROUND(max_fee, 9) as max_fee_sol,
   RPAD('█', FLOOR(percentage/2)::INT, '█') as distribution_viz
@@ -50,16 +48,12 @@ FROM fee_stats
 ORDER BY 
   swap_program,
   CASE fee_range
-    WHEN '0 (No Fee)' THEN 1
-    WHEN '< 0.000005 SOL' THEN 2
-    WHEN '0.000005 SOL (Base Fee)' THEN 3
-    WHEN '0.000005-0.00001 SOL' THEN 4
-    WHEN '0.00001-0.00005 SOL' THEN 5
-    WHEN '0.00005-0.0001 SOL' THEN 6
-    WHEN '0.0001-0.0005 SOL' THEN 7
-    WHEN '0.0005-0.001 SOL' THEN 8
-    WHEN '0.001-0.005 SOL' THEN 9
-    WHEN '0.005-0.01 SOL' THEN 10
-    WHEN '0.01-0.05 SOL' THEN 11
-    ELSE 12
+    WHEN '< 0.000005 SOL (기본 수수료 미만)' THEN 1
+    WHEN '0.000005 SOL (기본 수수료)' THEN 2
+    WHEN '0.000005-0.000006 SOL (기본 수수료 +20% 이내)' THEN 3
+    WHEN '0.000006-0.00001 SOL (기본 수수료 2배 이내)' THEN 4
+    WHEN '0.00001-0.00005 SOL (기본 수수료 2-10배)' THEN 5
+    WHEN '0.00005-0.0001 SOL (기본 수수료 10-20배)' THEN 6
+    WHEN '0.0001-0.001 SOL (기본 수수료 20-200배)' THEN 7
+    WHEN '> 0.001 SOL (기본 수수료 200배 초과)' THEN 8
   END; 
