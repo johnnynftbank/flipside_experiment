@@ -11,30 +11,8 @@ Solana 블록체인의 주요 DEX 프로그램들의 수수료 구조를 파악�
 
 ### 2.1 전체 트랜잭션 수수료 분포
 
-#### 쿼리
+#### 쿼리 및 결과
 - [fee_distribution_analysis.sql](../../queries/fee_distribution_analysis.sql)
-```sql
-WITH fee_stats AS (
-  SELECT 
-    fee,
-    COUNT(*) as tx_count,
-    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () as percentage
-  FROM solana.core.fact_transactions
-  WHERE block_timestamp >= DATEADD(day, -7, CURRENT_TIMESTAMP())
-  GROUP BY fee
-  HAVING tx_count > 10
-  ORDER BY tx_count DESC
-  LIMIT 20
-)
-SELECT 
-  fee,
-  tx_count,
-  ROUND(percentage, 2) as percentage,
-  RPAD('█', FLOOR(percentage/2)::INT, '█') as distribution_viz
-FROM fee_stats;
-```
-
-#### 결과
 - [fee_distribution.csv](../../data/samples/solana/fee_distribution.csv)
 
 #### 주요 발견사항
@@ -46,10 +24,8 @@ FROM fee_stats;
 
 ### 2.2 상위 5개 스왑 프로그램 분석
 
-#### 쿼리
+#### 쿼리 및 결과
 - [swap_programs_analysis.sql](../../queries/swap_programs_analysis.sql)
-
-#### 결과
 - [swap_program_ratio.csv](../../data/samples/solana/swap_program_ratio.csv)
 
 #### 주요 발견사항
@@ -62,7 +38,7 @@ FROM fee_stats;
 
 ### 2.3 상위 5개 프로그램 수수료 상세 분석
 
-#### 쿼리
+#### 쿼리 및 결과
 - [top5_swap_programs_fee_analysis.sql](../../queries/top5_swap_programs_fee_analysis.sql)
 
 ## 3. 종합 인사이트
@@ -77,10 +53,4 @@ FROM fee_stats;
 
 3. **프로그램별 특성**
    - 각 프로그램별 수수료 정책과 사용 패턴이 다양하게 나타남
-   - 상세 수수료 분포는 추가 쿼리 실행 결과 확인 필요
-
-## 4. 후속 분석 제안
-
-1. 시간대별 수수료 변동 패턴 분석
-2. 토큰 페어별 수수료 차이 분석
-3. 사용자 그룹별 수수료 지출 패턴 분석 
+   - 상세 수수료 분포는 추가 쿼리 실행 결과 확인 필요 
