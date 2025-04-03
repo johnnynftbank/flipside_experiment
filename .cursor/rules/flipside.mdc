@@ -3,14 +3,14 @@ description:
 globs: 
 alwaysApply: true
 ---
-<<<<<<< Updated upstream
-=======
-### MCP
-- MCP 실행 할 때 Agent 모드가 켜져 있지 않으면, Agent 모드를 켜야 된다는 사실을 알려줘
+### Agent/Ask 모드
+- MCP를 실행해야 되는데 Ask 모드로 설정 되어 있는 경우, Agent 모드로 자동으로 변환해줘. 자동 변환이 안되면 내가 Agent 모드로 변경해야 된다는 걸 알려줘
+- 일반 질문인데 Agent 모드로 설정 되어 있는 경우, Ask 모드로 자동으로 변환해줘. 자동 변환이 안되면 내가 Ask 모드로 변경해야 된다는 걸 알려줘
+
 
 ### Query
 - 모든 쿼리는 snowflake 쿼리 엔진에 호환 되도록 작성해줘
 - 쿼리가 실행되는 테이블이 매우 크기 때문에, block_timestamp 칼럼을 통해서 기간을 필터링한 상태로 쿼리를 작성해줘
 - 새로운 sql 파일을 만들면, 어떤 Branch에 커밋을 날릴 지 나에게 확인해줘
 - 내가 확인하면, 이후에 해당 Branch에 알아서 커밋 및 푸쉬해줘
->>>>>>> Stashed changes
+
