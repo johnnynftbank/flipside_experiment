@@ -2,10 +2,6 @@ WITH top_5_programs AS (
   SELECT DISTINCT swap_program
   FROM (
     VALUES 
-      ('Raydium Liquidity Pool V4'),
-      ('raydium concentrated liquidity'),
-      ('pump.fun'),
-      ('raydium constant product market maker'),
       ('meteora dlmm pools program')
   ) AS t(swap_program)
 ),
@@ -30,9 +26,9 @@ fee_stats AS (
     MAX(t.fee) as max_fee
   FROM solana.defi.fact_swaps s
   JOIN solana.core.fact_transactions t ON s.tx_id = t.tx_id
-  JOIN top_5_programs p ON s.swap_program = p.swap_program
-  WHERE s.block_timestamp >= '2024-03-01' 
+  WHERE s.block_timestamp >= '2024-03-25'
     AND s.block_timestamp < '2024-04-01'
+    AND LOWER(s.swap_program) = 'meteora dlmm pools program'
   GROUP BY 1, 2
 )
 SELECT 
