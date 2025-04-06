@@ -111,4 +111,4 @@ SELECT
   END AS token_count_category
 FROM wallet_summary
 WHERE is_churned = TRUE
-ORDER BY unique_tokens; 
+ORDER BY unique_tokens;
