@@ -151,15 +151,27 @@ def visualization_analysis(df):
     active_mean_roi = df_clean[df_clean['WALLET_STATUS'] == 'ACTIVE']['EXPECTED_ROI'].mean()
     churned_mean_roi = df_clean[df_clean['WALLET_STATUS'] == 'CHURNED']['EXPECTED_ROI'].mean()
     
-    # 개선된 히스토그램: KDE 곡선 추가 및 가독성 개선
-    ax = sns.histplot(data=df_clean, x='EXPECTED_ROI', hue='WALLET_STATUS', bins=30, 
-                      kde=True, element="bars", alpha=0.5, multiple="layer")
+    # 개선된 히스토그램: 명확한 막대 그래프와 KDE 곡선
+    plt.figure(figsize=(14, 8))
+    # 더 명확한 히스토그램 - 겹치지 않는 막대 형태로 표시
+    ax = sns.histplot(
+        data=df_clean, 
+        x='EXPECTED_ROI', 
+        hue='WALLET_STATUS', 
+        bins=30,
+        kde=True,  # KDE 곡선 활성화
+        element="bars", 
+        alpha=0.6,  # 투명도 조정
+        multiple="dodge",  # 막대가 겹치지 않도록 설정
+        stat="count",  # 빈도수 표시
+        common_norm=False  # 각 그룹을 독립적으로 정규화
+    )
     
     # 각 그룹의 평균 ROI 세로선 추가
     plt.axvline(x=active_mean_roi, color='green', linestyle='--', linewidth=2, label=f'ACTIVE Mean: {active_mean_roi:.2f}')
     plt.axvline(x=churned_mean_roi, color='blue', linestyle='--', linewidth=2, label=f'CHURNED Mean: {churned_mean_roi:.2f}')
     
-    # 그래프 제목 및 레이블 설정
+    # 그래프 제목 및 레이블 설정 (한글 폰트 문제 방지)
     plt.title('Distribution of Expected ROI by Wallet Status (Actual Counts)\n활성 vs 이탈 지갑의 ROI 분포 비교', fontsize=14)
     plt.xlabel('Expected ROI', fontsize=12)
     plt.ylabel('Wallet Count (지갑 개수)', fontsize=12)
@@ -171,18 +183,16 @@ def visualization_analysis(df):
     # 왼쪽 상단에 총 지갑 수 표시
     active_count = len(df_clean[df_clean['WALLET_STATUS'] == 'ACTIVE'])
     churned_count = len(df_clean[df_clean['WALLET_STATUS'] == 'CHURNED'])
-    plt.annotate(f'총 지갑 수: {len(df_clean)}\nACTIVE: {active_count}\nCHURNED: {churned_count}', 
+    total_count = len(df_clean)
+    roi_diff = active_mean_roi - churned_mean_roi
+    
+    # 영문으로 통계 정보 표시하여 한글 폰트 문제 방지
+    plt.annotate(f'Total Wallets: {total_count}\nACTIVE: {active_count}\nCHURNED: {churned_count}\nROI Diff: {roi_diff:.2f}', 
                 xy=(0.02, 0.95), xycoords='axes fraction', fontsize=10,
                 bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8))
     
-    # 통계 정보 추가
-    roi_diff = active_mean_roi - churned_mean_roi
-    plt.annotate(f'ROI 차이(ACTIVE - CHURNED): {roi_diff:.2f}', 
-                xy=(0.02, 0.80), xycoords='axes fraction', fontsize=10,
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8))
-    
-    # 범례 위치 조정 및 추가 정보 포함
-    handles, labels = ax.get_legend_handles_labels()
+    # 범례 위치 조정 및 추가 정보 포함 - 기존 항목과 평균선을 하나의 범례로 통합
+    handles, labels = plt.gca().get_legend_handles_labels()
     plt.legend(handles=handles, labels=labels, title='Wallet Status', loc='upper right', fontsize=10)
     
     plt.tight_layout()
