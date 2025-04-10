@@ -151,19 +151,47 @@ std_threshold = df["ROI_STANDARD_DEVIATION"].quantile(percentile)
 df_filtered = df[(df["EXPECTED_ROI"] <= roi_threshold) & 
                  (df["ROI_STANDARD_DEVIATION"] <= std_threshold)].copy()
 
-# Create scatter plot with filtered data
+# Add reference lines for median values to divide the plot into quadrants
+roi_median = df_filtered["EXPECTED_ROI"].median()
+std_median = df_filtered["ROI_STANDARD_DEVIATION"].median()
+
+# Calculate min and max values for Sharpe Ratio to set a better color scale
+sharpe_min = df_filtered["SHARPE_RATIO"].quantile(0.01)  # 1st percentile to avoid extreme outliers
+sharpe_max = df_filtered["SHARPE_RATIO"].quantile(0.99)  # 99th percentile to avoid extreme outliers
+sharpe_mid = 0  # Midpoint for diverging colormap
+
+# Create diverging colormap: blue (negative), white (zero), red (positive)
+cmap_diverging = plt.cm.RdBu_r  # Red-Blue reversed colormap (negative is blue, positive is red)
+
+# Draw shaded areas for quadrants
+# Q1: High ROI, High σ (top right)
+plt.axhspan(roi_median, roi_threshold, xmin=(std_median-df_filtered["ROI_STANDARD_DEVIATION"].min())/(std_threshold-df_filtered["ROI_STANDARD_DEVIATION"].min()), 
+            xmax=1, facecolor='lightsalmon', alpha=0.15)
+# Q2: Low ROI, High σ (bottom right)
+plt.axhspan(df_filtered["EXPECTED_ROI"].min(), roi_median, xmin=(std_median-df_filtered["ROI_STANDARD_DEVIATION"].min())/(std_threshold-df_filtered["ROI_STANDARD_DEVIATION"].min()), 
+            xmax=1, facecolor='lightcoral', alpha=0.15)
+# Q3: Low ROI, Low σ (bottom left)
+plt.axhspan(df_filtered["EXPECTED_ROI"].min(), roi_median, xmin=0, 
+            xmax=(std_median-df_filtered["ROI_STANDARD_DEVIATION"].min())/(std_threshold-df_filtered["ROI_STANDARD_DEVIATION"].min()), facecolor='lightsteelblue', alpha=0.15)
+# Q4: High ROI, Low σ (top left)
+plt.axhspan(roi_median, roi_threshold, xmin=0, 
+            xmax=(std_median-df_filtered["ROI_STANDARD_DEVIATION"].min())/(std_threshold-df_filtered["ROI_STANDARD_DEVIATION"].min()), facecolor='lightgreen', alpha=0.15)
+
+# Create scatter plot with filtered data and normalized color scale
 scatter = plt.scatter(
     df_filtered["ROI_STANDARD_DEVIATION"], 
     df_filtered["EXPECTED_ROI"],
     c=df_filtered["SHARPE_RATIO"],
-    cmap=cmap,
+    cmap=cmap_diverging,
+    vmin=sharpe_min, vmax=sharpe_max,  # Set explicit color limits
     s=40,
     alpha=0.7
 )
 
-# Add color bar
+# Add color bar with better formatting
 cbar = plt.colorbar(scatter)
 cbar.set_label('Sharpe Ratio', rotation=270, labelpad=20)
+cbar.mappable.set_clim(sharpe_min, sharpe_max)  # Ensure colorbar limits match data
 
 # Add axis labels and title
 plt.xlabel('ROI Standard Deviation (σ)')
@@ -171,21 +199,42 @@ plt.ylabel('Expected ROI')
 plt.title('2D Analysis: Expected ROI vs. ROI Standard Deviation (Filtered)')
 
 # Add reference lines for median values to divide the plot into quadrants
-roi_median = df_filtered["EXPECTED_ROI"].median()
-std_median = df_filtered["ROI_STANDARD_DEVIATION"].median()
+plt.axhline(y=roi_median, color='black', linestyle='--', alpha=0.7, linewidth=1.5)
+plt.axvline(x=std_median, color='black', linestyle='--', alpha=0.7, linewidth=1.5)
 
-plt.axhline(y=roi_median, color='gray', linestyle='--', alpha=0.5)
-plt.axvline(x=std_median, color='gray', linestyle='--', alpha=0.5)
+# Show the median values as text
+plt.text(std_median + 0.02, df_filtered["EXPECTED_ROI"].min() + 0.02, f'Median σ = {std_median:.3f}', 
+         fontweight='bold', bbox=dict(facecolor='white', alpha=0.7))
+plt.text(df_filtered["ROI_STANDARD_DEVIATION"].min() + 0.02, roi_median + 0.02, f'Median ROI = {roi_median:.3f}', 
+         fontweight='bold', bbox=dict(facecolor='white', alpha=0.7))
 
-# Add annotations for each quadrant
-plt.text(std_threshold*0.8, roi_threshold*0.9, "High ROI, High σ\n(Jackpot Seekers)", 
-         ha='right', va='top', bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.7))
-plt.text(std_threshold*0.8, roi_median*0.3, "Low ROI, High σ\n(Unsuccessful Gamblers)", 
-         ha='right', va='bottom', bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.7))
-plt.text(std_median*0.2, roi_threshold*0.9, "High ROI, Low σ\n(Skilled Investors)", 
-         ha='left', va='top', bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.7))
-plt.text(std_median*0.2, roi_median*0.3, "Low ROI, Low σ\n(Cautious/Conservative)", 
-         ha='left', va='bottom', bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.7))
+# Calculate quadrant counts
+q1_count = len(df_filtered[(df_filtered["EXPECTED_ROI"] >= roi_median) & (df_filtered["ROI_STANDARD_DEVIATION"] >= std_median)])
+q2_count = len(df_filtered[(df_filtered["EXPECTED_ROI"] < roi_median) & (df_filtered["ROI_STANDARD_DEVIATION"] >= std_median)])
+q3_count = len(df_filtered[(df_filtered["EXPECTED_ROI"] < roi_median) & (df_filtered["ROI_STANDARD_DEVIATION"] < std_median)])
+q4_count = len(df_filtered[(df_filtered["EXPECTED_ROI"] >= roi_median) & (df_filtered["ROI_STANDARD_DEVIATION"] < std_median)])
+total = len(df_filtered)
+
+# Add annotations for each quadrant - position near to the quadrant centers and include counts
+plt.text(std_median + (std_threshold - std_median) * 0.5, roi_median + (roi_threshold - roi_median) * 0.5, 
+         f"Q1: High ROI, High σ\n(Jackpot Seekers)\n{q1_count} 지갑 ({q1_count/total*100:.1f}%)", 
+         ha='center', va='center', fontweight='bold',
+         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
+
+plt.text(std_median + (std_threshold - std_median) * 0.5, df_filtered["EXPECTED_ROI"].min() + (roi_median - df_filtered["EXPECTED_ROI"].min()) * 0.5, 
+         f"Q2: Low ROI, High σ\n(Unsuccessful Gamblers)\n{q2_count} 지갑 ({q2_count/total*100:.1f}%)", 
+         ha='center', va='center', fontweight='bold',
+         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
+
+plt.text(df_filtered["ROI_STANDARD_DEVIATION"].min() + (std_median - df_filtered["ROI_STANDARD_DEVIATION"].min()) * 0.5, df_filtered["EXPECTED_ROI"].min() + (roi_median - df_filtered["EXPECTED_ROI"].min()) * 0.5, 
+         f"Q3: Low ROI, Low σ\n(Cautious/Conservative)\n{q3_count} 지갑 ({q3_count/total*100:.1f}%)", 
+         ha='center', va='center', fontweight='bold',
+         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
+
+plt.text(df_filtered["ROI_STANDARD_DEVIATION"].min() + (std_median - df_filtered["ROI_STANDARD_DEVIATION"].min()) * 0.5, roi_median + (roi_threshold - roi_median) * 0.5, 
+         f"Q4: High ROI, Low σ\n(Skilled Investors)\n{q4_count} 지갑 ({q4_count/total*100:.1f}%)", 
+         ha='center', va='center', fontweight='bold',
+         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
 
 # Add reference line for Sharpe = 1
 max_visible_std = std_threshold
