@@ -24,7 +24,7 @@
 ## 3. 분포 분석
 
 ### 기대 수익률(EXPECTED_ROI)
-![기대 수익률 분포](./image/EXPECTED_ROI_distribution.png)
+![기대 수익률 분포](../visualization/EXPECTED_ROI_distribution.png)
 
 기대 수익률은 트레이더가 얻을 것으로 예상되는 평균 수익률을 나타냅니다. 분포 특성:
 - 분포 형태: 극단적인 양의 Skewness(29.10)로 오른쪽으로 매우 치우친 분포
@@ -32,7 +32,7 @@
 - 잭팟 추구형 특성: 높은 기대 수익률 값은 잭팟을 추구하는 행동 패턴을 나타낼 수 있음
 
 ### ROI 표준편차(ROI_STANDARD_DEVIATION)
-![ROI 표준편차 분포](./image/ROI_STANDARD_DEVIATION_distribution.png)
+![ROI 표준편차 분포](../visualization/ROI_STANDARD_DEVIATION_distribution.png)
 
 ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 분포 형태: 매우 강한 양의 Skewness(36.11)로 극단적으로 치우친 분포
@@ -40,7 +40,7 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 잭팟 추구형 특성: 높은 표준편차는 위험을 감수하는 트레이딩 패턴을 나타냄
 
 ### 샤프 비율(SHARPE_RATIO)
-![샤프 비율 분포](./image/SHARPE_RATIO_distribution.png)
+![샤프 비율 분포](../visualization/SHARPE_RATIO_distribution.png)
 
 샤프 비율은 위험 대비 수익률을 나타내는 지표입니다. 분포 특성:
 - 분포 형태: 음의 Skewness(-8.94)로 왼쪽으로 치우친 분포
@@ -48,7 +48,7 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 잭팟 추구형 특성: 낮은 샤프 비율은 높은 위험 대비 낮은 수익을 나타내며, 잭팟 추구형 특성과 연관됨
 
 ### 승패 비율(WIN_LOSS_RATIO)
-![승패 비율 분포](./image/WIN_LOSS_RATIO_distribution.png)
+![승패 비율 분포](../visualization/WIN_LOSS_RATIO_distribution.png)
 
 승패 비율은 성공한 거래와 실패한 거래의 비율을 나타냅니다. 분포 특성:
 - 분포 형태: 강한 양의 Skewness(12.52)
@@ -56,7 +56,7 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 잭팟 추구형 특성: 극단적으로 높거나 낮은 승패 비율은 특정 전략의 존재를 시사함
 
 ### 최대 거래 비중(MAX_TRADE_PROPORTION)
-![최대 거래 비중 분포](./image/MAX_TRADE_PROPORTION_distribution.png)
+![최대 거래 비중 분포](../visualization/MAX_TRADE_PROPORTION_distribution.png)
 
 최대 거래 비중은 전체 거래 중 가장 큰 비중을 차지하는 단일 거래의 비율입니다. 분포 특성:
 - 분포 형태: 양의 Skewness(1.81)를 보이지만, 데이터는 주로 낮은 값 쪽(왼쪽)에 집중되어 있고 오른쪽으로 긴 꼬리를 가짐
@@ -64,7 +64,7 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 잭팟 추구형 특성: 높은 최대 거래 비중은 '올인' 거래 패턴을 나타내며, 잭팟을 추구하는 행동과 연관됨
 
 ### 전체 지표 분포 비교
-![잭팟 지표 분포](./image/jackpot_criteria_distributions.png)
+![잭팟 지표 분포](../visualization/jackpot_criteria_distributions.png)
 
 모든 지표의 분포를 한눈에 비교한 결과, ROI 표준편차와 기대 수익률이 가장 큰 Skewness를 보이며, 최대 거래 비중은 왼쪽(낮은 값)에 데이터가 집중되고 오른쪽으로 꼬리가 있는 형태를 보입니다.
 
@@ -91,7 +91,7 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 전체 지갑 수: 3,823개
 
 ## 5. 지갑 상태별 분석
-![지갑 상태별 지표 분포](./image/jackpot_criteria_by_wallet_status.png)
+![지갑 상태별 지표 분포](../visualization/jackpot_criteria_by_wallet_status.png)
 
 지갑 상태(active vs churned)에 따른 지표 차이를 분석한 결과:
 - 생성된 박스플롯 시각화에서 확인할 수 있듯이 활성 지갑과 이탈 지갑 간에 뚜렷한 차이가 관찰됩니다.
@@ -99,8 +99,8 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 샤프 비율은 활성 지갑에서 더 높게 나타나며, 이는 위험 대비 수익률이 더 효율적임을 의미합니다.
 
 ## 6. 지표 간 상관관계
-![피어슨 상관관계 히트맵](./image/jackpot_pearson_correlation.png)
-![스피어만 상관관계 히트맵](./image/jackpot_spearman_correlation.png)
+![피어슨 상관관계 히트맵](../visualization/jackpot_pearson_correlation.png)
+![스피어만 상관관계 히트맵](../visualization/jackpot_spearman_correlation.png)
 
 지표 간 상관관계 분석 결과:
 - **피어슨 상관계수**와 **스피어만 상관계수** 모두 분석하여 선형 및 비선형 관계를 파악했습니다.
@@ -109,7 +109,7 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - 승패 비율(WIN_LOSS_RATIO)과 기대 수익률 사이에도 강한 양의 상관관계(피어슨: 0.62, 스피어만: 0.74)가 있어, 승리 비율이 높은 트레이더가 더 높은 수익률을 얻는 경향이 있습니다.
 - ROI 표준편차는 다른 지표들과 상대적으로 독립적으로 움직이는 경향이 있습니다.
 
-![산점도 행렬](./image/jackpot_scatter_matrix.png)
+![산점도 행렬](../visualization/jackpot_scatter_matrix.png)
 
 주요 지표 간 산점도 행렬을 통해 살펴보면:
 - 기대 수익률과 최대 거래 비중 사이의 음의 상관관계가 명확하게 나타납니다.
@@ -120,7 +120,15 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 
 각 지표별 상위 5% 및 10%를 기준으로 잭팟 추구 그룹을 식별하고 분석했습니다.
 
-![분류 비교](./image/jackpot_percentile_classification_comparison.png)
+### 지표 번호 매핑
+분석 지표가 많아 그래프 가독성을 높이기 위해 다음과 같이 번호로 매핑하였습니다:
+1. 기대 수익률(Expected ROI)
+2. ROI 표준편차(ROI Standard Deviation)
+3. 샤프 비율(Sharpe Ratio)
+4. 승패 비율(Win/Loss Ratio)
+5. 최대 거래 비중(Max Trade Proportion)
+
+![분류 비교](../visualization/jackpot_percentile_classification_comparison.png)
 
 ### 상위 10% 기준 분류 결과
 - **기대 수익률 기준**: 상위 10%(0.0055 이상) 그룹은 평균 이탈률 28.09%(일반 그룹 40.25%)로 오히려 더 안정적이며, 평균 샤프 비율 0.17로 더 효율적인 투자 패턴을 보였습니다.
@@ -129,9 +137,9 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 - **승패 비율 기준**: 상위 10%(0.9388 이상) 그룹은 이탈률이 28.09%로 낮고, 평균 기대 수익률 0.03으로 수익성이 있으나 잭팟 추구보다는 안정적 투자 패턴에 가깝습니다.
 - **최대 거래 비중 기준**: 상위 10%(0.4726 이상) 그룹은 이탈률이 92.98%로 매우 높고, 평균 샤프 비율 -5.51로 매우 낮아 잭팟 추구형 특성이 가장 뚜렷했습니다.
 
-![이탈률 비교](./image/jackpot_percentile_churn_comparison.png)
+![이탈률 비교](../visualization/jackpot_percentile_churn_comparison.png)
 
-이탈률 비교에서도 샤프 비율 하위그룹과 최대 거래 비중 상위그룹이 월등히 높은 이탈률을 보여 잭팟 추구 투자자의 행동 패턴을 반영합니다.
+이탈률 비교에서도 3번 지표(샤프 비율) 하위그룹과 5번 지표(최대 거래 비중) 상위그룹이 월등히 높은 이탈률을 보여 잭팟 추구 투자자의 행동 패턴을 반영합니다.
 
 통계적 유의성 검정 결과, 모든 그룹 간 비교에서 대부분의 지표에서 유의미한 차이(p < 0.05)가 확인되었습니다.
 
@@ -139,21 +147,21 @@ ROI 표준편차는 수익률의 변동성을 나타냅니다. 분포 특성:
 
 K-means 알고리즘을 사용하여 5개 지표를 기반으로 군집화를 수행했습니다.
 
-![최적 군집 수](./image/jackpot_cluster_optimal_k.png)
+![최적 군집 수](../visualization/jackpot_cluster_optimal_k.png)
 
 Elbow method와 Silhouette score를 통해 최적의 군집 수를 결정했으며, 분석 결과 4개의 군집이 적합한 것으로 나타났습니다.
 
-![군집 특성](./image/jackpot_cluster_analysis.png)
+![군집 특성](../visualization/jackpot_cluster_analysis.png)
 
 ### 군집별 특성
-- **군집 0** (571개 지갑, 이탈률 29.25%): 높은 EXPECTED_ROI(0.0160)과 WIN_LOSS_RATIO(1.11), 적절한 ROI_STANDARD_DEVIATION(0.40)를 가진 건전한 투자 그룹
-- **군집 1** (779개 지갑, 이탈률 10.78%): 낮은 ROI_STANDARD_DEVIATION(0.04), 중간 정도의 MAX_TRADE_PROPORTION(0.11)을 가진 보수적 투자 그룹
-- **군집 2** (1,604개 지갑, 이탈률 33.92%): 부정적 EXPECTED_ROI(-0.21), 높은 ROI_STANDARD_DEVIATION(0.39)를 가진 손실형 투자 그룹
-- **군집 3** (597개 지갑, 이탈률 98.99%): 극도로 낮은 SHARPE_RATIO(-5.99), 높은 MAX_TRADE_PROPORTION(0.48), 매우 낮은 WIN_LOSS_RATIO(0.03)을 가진 전형적인 잭팟 추구 그룹
+- **군집 0 (숙련된 투자자, Skilled Investors)** (571개 지갑, 이탈률 29.25%): 높은 EXPECTED_ROI(0.0160)과 WIN_LOSS_RATIO(1.11), 적절한 ROI_STANDARD_DEVIATION(0.40)를 가진 건전한 투자 그룹
+- **군집 1 (신중한 트레이더, Cautious/Conservative)** (779개 지갑, 이탈률 10.78%): 낮은 ROI_STANDARD_DEVIATION(0.04), 중간 정도의 MAX_TRADE_PROPORTION(0.11)을 가진 보수적 투자 그룹
+- **군집 2 (실패한 도박꾼, Unsuccessful Gamblers)** (1,604개 지갑, 이탈률 33.92%): 부정적 EXPECTED_ROI(-0.21), 높은 ROI_STANDARD_DEVIATION(0.39)를 가진 손실형 투자 그룹
+- **군집 3 (잭팟 추구자, Jackpot Seekers)** (597개 지갑, 이탈률 98.99%): 극도로 낮은 SHARPE_RATIO(-5.99), 높은 MAX_TRADE_PROPORTION(0.48), 매우 낮은 WIN_LOSS_RATIO(0.03)을 가진 전형적인 잭팟 추구 그룹
 
-![군집 히트맵](./image/jackpot_cluster_heatmap.png)
+![군집 히트맵](../visualization/jackpot_cluster_heatmap.png)
 
-군집 3이 전형적인 잭팟 추구형 투자자 특성을 가장 뚜렷하게 보여주며, 이 그룹의 특성은 다음과 같습니다:
+군집 3(잭팟 추구자)이 전형적인 잭팟 추구형 투자자 특성을 가장 뚜렷하게 보여주며, 이 그룹의 특성은 다음과 같습니다:
 - 매우 부정적인 EXPECTED_ROI(-0.76)
 - 낮은 ROI_STANDARD_DEVIATION(0.19)
 - 극도로 낮은 SHARPE_RATIO(-5.99)

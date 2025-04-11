@@ -23,7 +23,7 @@ sns.set_palette("Set2")
 # 경로 설정 개선 - 절대 경로 사용
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 data_path = os.path.join(base_dir, 'query', 'query_result', 'jackpot_criteria_3822.csv')
-REPORT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'report', 'image')
+REPORT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "visualization")
 
 print(f"Using data file: {data_path}")
 print(f"Saving results to: {REPORT_DIR}")
@@ -251,6 +251,16 @@ gs = gridspec.GridSpec(3, 2)
 ax1 = plt.subplot(gs[0, :])
 comparison_data = []
 
+# 지표와 번호 매핑 정의
+metric_numbers = {metrics[i]: f'{i+1}' for i in range(len(metrics))}
+metric_mapping = {f'{i+1}': metrics[i] for i in range(len(metrics))}
+metric_mapping_full = {f'{i+1}': metrics_labels[metrics[i]] for i in range(len(metrics))}
+
+# 매핑 정보 출력
+print("\n지표-번호 매핑:")
+for num, metric in metric_mapping_full.items():
+    print(f"{num}: {metric}")
+
 for metric in metrics:
     jp_means = [group_stats[10][metric][f'jackpot_mean_{m}'] for m in metrics]
     non_jp_means = [group_stats[10][metric][f'non_jackpot_mean_{m}'] for m in metrics]
@@ -260,14 +270,16 @@ for metric in metrics:
         comparison_data.append({
             'Classification Metric': metrics_labels[metric],
             'Group': 'Jackpot Seeking',
-            'Metric': metrics_labels[m],
-            'Value': jp_means[i]
+            'Metric': metric_numbers[m],  # 번호로 변경
+            'Value': jp_means[i],
+            'Original_Metric': metrics_labels[m]  # 원래 지표명 저장
         })
         comparison_data.append({
             'Classification Metric': metrics_labels[metric],
             'Group': 'Regular',
-            'Metric': metrics_labels[m],
-            'Value': non_jp_means[i]
+            'Metric': metric_numbers[m],  # 번호로 변경
+            'Value': non_jp_means[i],
+            'Original_Metric': metrics_labels[m]  # 원래 지표명 저장
         })
 
 comparison_df = pd.DataFrame(comparison_data)
@@ -289,24 +301,41 @@ g = sns.catplot(
 )
 
 g.set_titles("{col_name} Based Classification")
-g.set_axis_labels("", "Average Value")
+g.set_axis_labels("Metric Number", "Average Value")
+
+# 범례 추가
+for ax in g.axes.flat:
+    ax.legend(title='Group')
+
+# 그림 제목 및 범례 설명 추가
 g.fig.suptitle('Comparison of Average Metrics: Jackpot Seeking vs Regular Groups (Top 10%)', fontsize=16, y=1.02)
+
+# 그림 아래에 지표 번호 설명 추가
+metric_legend = "\nMetric Legend: "
+for num, metric in metric_mapping_full.items():
+    metric_legend += f"{num}={metric}, "
+metric_legend = metric_legend[:-2]  # 마지막 쉼표 제거
+
+plt.figtext(0.5, -0.02, metric_legend, ha='center', fontsize=11, wrap=True)
+plt.tight_layout()
 g.savefig(f'{REPORT_DIR}/jackpot_percentile_classification_comparison.png', dpi=300, bbox_inches='tight')
 
-# 이탈률 비교
+# 이탈률 비교 차트도 번호로 변경
 plt.figure(figsize=(14, 8))
 churn_data = []
 
 for metric in metrics:
     churn_data.append({
-        'Classification Metric': metrics_labels[metric],
+        'Classification Metric': metric_numbers[metric],  # 번호로 변경
         'Group': 'Jackpot Seeking',
-        'Churn Rate (%)': group_stats[10][metric]['jackpot_churn_rate']
+        'Churn Rate (%)': group_stats[10][metric]['jackpot_churn_rate'],
+        'Original_Metric': metrics_labels[metric]  # 원래 지표명 저장
     })
     churn_data.append({
-        'Classification Metric': metrics_labels[metric],
+        'Classification Metric': metric_numbers[metric],  # 번호로 변경
         'Group': 'Regular',
-        'Churn Rate (%)': group_stats[10][metric]['non_jackpot_churn_rate']
+        'Churn Rate (%)': group_stats[10][metric]['non_jackpot_churn_rate'],
+        'Original_Metric': metrics_labels[metric]  # 원래 지표명 저장
     })
 
 churn_df = pd.DataFrame(churn_data)
@@ -322,9 +351,12 @@ sns.barplot(
 
 plt.title('Churn Rate Comparison: Jackpot Seeking vs Regular Groups (Top 10%)', fontsize=14)
 plt.ylabel('Churn Rate (%)', fontsize=12)
-plt.xlabel('Classification Metric', fontsize=12)
-plt.xticks(rotation=45)
+plt.xlabel('Classification Metric Number', fontsize=12)
+plt.xticks(rotation=0)
 plt.legend(title='Group')
+
+# 그림 아래에 지표 번호 설명 추가
+plt.figtext(0.5, 0.01, metric_legend, ha='center', fontsize=11, wrap=True)
 plt.tight_layout()
 plt.savefig(f'{REPORT_DIR}/jackpot_percentile_churn_comparison.png', dpi=300, bbox_inches='tight')
 
@@ -421,6 +453,14 @@ cluster_summary['Churn Rate (%)'] = df_clean.groupby('cluster').apply(
 # 클러스터 시각화
 plt.figure(figsize=(20, 16))
 
+# 클러스터 레이블을 의미 있는 이름으로 매핑
+cluster_names = {
+    0: "Skilled Investors",
+    1: "Cautious/Conservative",
+    2: "Unsuccessful Gamblers", 
+    3: "Jackpot Seekers"
+}
+
 # 선별된 주요 특성 3개 간 3D 산점도
 from mpl_toolkits.mplot3d import Axes3D
 ax = plt.subplot(2, 2, 1, projection='3d')
@@ -437,7 +477,10 @@ ax.set_xlabel(metrics_labels['ROI_STANDARD_DEVIATION'], fontsize=10)
 ax.set_ylabel(metrics_labels['EXPECTED_ROI'], fontsize=10)
 ax.set_zlabel(metrics_labels['MAX_TRADE_PROPORTION'], fontsize=10)
 plt.title('3D Visualization of Clusters', fontsize=14)
-plt.colorbar(scatter, ax=ax, label='Cluster')
+cbar = plt.colorbar(scatter, ax=ax, label='Cluster')
+# 컬러바 틱 레이블 변경
+cbar.set_ticks(range(optimal_k))
+cbar.set_ticklabels([cluster_names[i] for i in range(optimal_k)])
 
 # 클러스터 별 각 지표 평균값 비교 (방사형 차트)
 plt.subplot(2, 2, 2, polar=True)
@@ -456,25 +499,27 @@ for i in range(optimal_k):
     values_norm = [(val - min_vals[m]) / (max_vals[m] - min_vals[m]) for m, val in zip(metrics, values)]
     values_norm += values_norm[:1]  # 원형을 완성하기 위해
     
-    ax.plot(angles, values_norm, linewidth=2, linestyle='solid', label=f'Cluster {i}')
+    ax.plot(angles, values_norm, linewidth=2, linestyle='solid', label=cluster_names[i])
     ax.fill(angles, values_norm, alpha=0.1)
 
 plt.xticks(angles[:-1], categories, fontsize=10)
 plt.title('Cluster Profiles (Normalized)', fontsize=14)
 plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
 
-# 클러스터별 지갑 수와 이탈률
+# 클러스터별 지갑 수와 이탈률 - x축 레이블을 의미 있는 이름으로 변경
 ax1 = plt.subplot(2, 2, 3)
-cluster_summary['Wallet Count'].plot(kind='bar', ax=ax1, color='skyblue', alpha=0.7)
+bars = cluster_summary['Wallet Count'].plot(kind='bar', ax=ax1, color='skyblue', alpha=0.7)
 ax1.set_title('Number of Wallets per Cluster', fontsize=14)
 ax1.set_xlabel('Cluster', fontsize=12)
 ax1.set_ylabel('Count', fontsize=12)
+ax1.set_xticklabels([cluster_names[i] for i in range(optimal_k)], rotation=45, ha='right')
 
 ax2 = plt.subplot(2, 2, 4)
 cluster_summary['Churn Rate (%)'].plot(kind='bar', ax=ax2, color='salmon', alpha=0.7)
 ax2.set_title('Churn Rate per Cluster', fontsize=14)
 ax2.set_xlabel('Cluster', fontsize=12)
 ax2.set_ylabel('Churn Rate (%)', fontsize=12)
+ax2.set_xticklabels([cluster_names[i] for i in range(optimal_k)], rotation=45, ha='right')
 
 plt.tight_layout()
 plt.savefig(f'{REPORT_DIR}/jackpot_cluster_analysis.png', dpi=300, bbox_inches='tight')
@@ -484,7 +529,7 @@ plt.figure(figsize=(14, 8))
 cluster_mean_df = pd.DataFrame(columns=['Cluster'] + metrics)
 
 for i in range(optimal_k):
-    row_data = {'Cluster': f'Cluster {i}'}
+    row_data = {'Cluster': cluster_names[i]}
     for m in metrics:
         row_data[m] = cluster_centers.iloc[i][m]
     cluster_mean_df = pd.concat([cluster_mean_df, pd.DataFrame([row_data])], ignore_index=True)
