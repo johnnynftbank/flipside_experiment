@@ -1,0 +1,6 @@
+지표별 이탈률 연관성 순위 (절대값 기준):
+Expected ROI: 0.5557
+Max Trade Proportion: 0.4580
+Sharpe Ratio: 0.4575
+Win/Loss Ratio: 0.2549
+ROI Standard Deviation: 0.0129

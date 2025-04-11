@@ -1,0 +1,23 @@
+최적 식별 룰 top 3 (F1 Score 기준):
+
+- Rule 5 (MAX_TRADE_PROPORTION OR SHARPE_RATIO):
+  Wallet Count: 526
+  Churn Rate: 94.49%
+  Precision: 0.9449
+  Recall: 0.3586
+  F1 Score: 0.5199
+
+- Rule 6 (MAX_TRADE_PROPORTION >= 0.4):
+  Wallet Count: 510
+  Churn Rate: 93.53%
+  Precision: 0.9353
+  Recall: 0.3442
+  F1 Score: 0.5032
+
+- Rule 7 (SHARPE_RATIO <= -3.0):
+  Wallet Count: 463
+  Churn Rate: 98.27%
+  Precision: 0.9827
+  Recall: 0.3283
+  F1 Score: 0.4922
+

@@ -23,7 +23,9 @@ plt.rcParams.update({
 
 # Create output folder for visuals
 report_path = "../report"
+REPORT_DIR = "../visualization"
 os.makedirs(report_path, exist_ok=True)
+os.makedirs(REPORT_DIR, exist_ok=True)
 
 # Load data
 print("Loading dataset...")
@@ -217,22 +219,22 @@ total = len(df_filtered)
 
 # Add annotations for each quadrant - position near to the quadrant centers and include counts
 plt.text(std_median + (std_threshold - std_median) * 0.5, roi_median + (roi_threshold - roi_median) * 0.5, 
-         f"Q1: High ROI, High σ\n(Jackpot Seekers)\n{q1_count} 지갑 ({q1_count/total*100:.1f}%)", 
+         f"Q1: High ROI, High σ\n(Jackpot Seekers)\n{q1_count} wallets ({q1_count/total*100:.1f}%)", 
          ha='center', va='center', fontweight='bold',
          bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
 
 plt.text(std_median + (std_threshold - std_median) * 0.5, df_filtered["EXPECTED_ROI"].min() + (roi_median - df_filtered["EXPECTED_ROI"].min()) * 0.5, 
-         f"Q2: Low ROI, High σ\n(Unsuccessful Gamblers)\n{q2_count} 지갑 ({q2_count/total*100:.1f}%)", 
+         f"Q2: Low ROI, High σ\n(Unsuccessful Gamblers)\n{q2_count} wallets ({q2_count/total*100:.1f}%)", 
          ha='center', va='center', fontweight='bold',
          bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
 
 plt.text(df_filtered["ROI_STANDARD_DEVIATION"].min() + (std_median - df_filtered["ROI_STANDARD_DEVIATION"].min()) * 0.5, df_filtered["EXPECTED_ROI"].min() + (roi_median - df_filtered["EXPECTED_ROI"].min()) * 0.5, 
-         f"Q3: Low ROI, Low σ\n(Cautious/Conservative)\n{q3_count} 지갑 ({q3_count/total*100:.1f}%)", 
+         f"Q3: Low ROI, Low σ\n(Cautious/Conservative)\n{q3_count} wallets ({q3_count/total*100:.1f}%)", 
          ha='center', va='center', fontweight='bold',
          bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
 
 plt.text(df_filtered["ROI_STANDARD_DEVIATION"].min() + (std_median - df_filtered["ROI_STANDARD_DEVIATION"].min()) * 0.5, roi_median + (roi_threshold - roi_median) * 0.5, 
-         f"Q4: High ROI, Low σ\n(Skilled Investors)\n{q4_count} 지갑 ({q4_count/total*100:.1f}%)", 
+         f"Q4: High ROI, Low σ\n(Skilled Investors)\n{q4_count} wallets ({q4_count/total*100:.1f}%)", 
          ha='center', va='center', fontweight='bold',
          bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.9))
 
@@ -562,4 +564,113 @@ plt.tight_layout()
 plt.savefig(f"{report_path}/wallet_status_by_quadrant.png", dpi=300, bbox_inches='tight')
 plt.close()
 
-print("\nAnalysis completed. Results and visualizations saved to the 'report' directory.") 
+print("\nAnalysis completed. Results and visualizations saved to the 'report' directory.")
+
+# Update the kmeans clustering function to use the specified cluster names and save to visualization folder
+def plot_kmeans_clusters(df, x_col, y_col, k=4, report_dir=REPORT_DIR):
+    # Apply K-means clustering
+    features = df[[x_col, y_col]].values
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    df['cluster'] = kmeans.fit_predict(features)
+    centers = kmeans.cluster_centers_
+    
+    # Map cluster labels to meaningful names
+    cluster_names = {
+        0: "Skilled Investors",
+        1: "Cautious/Conservative", 
+        2: "Unsuccessful Gamblers",
+        3: "Jackpot Seekers"
+    }
+    
+    # Set colors and markers for each cluster
+    colors = ['#2D68C4', '#65A2D9', '#FF7E79', '#F93822']
+    markers = ['o', 's', '^', 'D']
+    
+    # Create plot
+    plt.figure(figsize=(12, 10))
+    
+    # Plot each cluster with its unique color and marker
+    for i in range(k):
+        cluster_data = df[df['cluster'] == i]
+        plt.scatter(
+            cluster_data[x_col], 
+            cluster_data[y_col], 
+            s=50, 
+            c=colors[i], 
+            marker=markers[i],
+            alpha=0.7, 
+            label=f"{cluster_names[i]} (n={len(cluster_data)})"
+        )
+    
+    # Plot cluster centers
+    plt.scatter(
+        centers[:, 0], 
+        centers[:, 1], 
+        s=200, 
+        c='yellow', 
+        marker='*', 
+        alpha=1, 
+        label='Cluster Centers'
+    )
+    
+    # Calculate statistics for each cluster
+    cluster_stats = []
+    for i in range(k):
+        cluster_data = df[df['cluster'] == i]
+        active_rate = (cluster_data['WALLET_STATUS'] == 'active').mean() * 100
+        churn_rate = 100 - active_rate
+        
+        # Add cluster annotation
+        plt.annotate(
+            f"{cluster_names[i]}\n"
+            f"Size: {len(cluster_data)} wallets\n"
+            f"Churn Rate: {churn_rate:.1f}%\n"
+            f"Mean ROI: {cluster_data[y_col].mean():.3f}\n"
+            f"Mean σ: {cluster_data[x_col].mean():.3f}",
+            xy=(centers[i, 0], centers[i, 1]),
+            xytext=(centers[i, 0] + 0.05, centers[i, 1] + 0.05),
+            bbox=dict(boxstyle="round,pad=0.5", fc="white", alpha=0.8),
+            fontsize=10
+        )
+        
+        # Store cluster statistics
+        cluster_stats.append({
+            'cluster': cluster_names[i],
+            'size': len(cluster_data),
+            'churn_rate': churn_rate,
+            'mean_roi': cluster_data[y_col].mean(),
+            'mean_std': cluster_data[x_col].mean(),
+            'mean_sharpe': cluster_data['SHARPE_RATIO'].mean() if 'SHARPE_RATIO' in cluster_data.columns else None
+        })
+    
+    # Set axis labels, title, etc.
+    plt.xlabel(x_col, fontsize=14)
+    plt.ylabel(y_col, fontsize=14)
+    plt.title(f'K-Means Clustering (k={k}): {y_col} vs {x_col}', fontsize=16)
+    plt.grid(True, alpha=0.3)
+    plt.legend(fontsize=12)
+    
+    # Save image and statistics
+    plt.tight_layout()
+    plt.savefig(os.path.join(report_dir, 'kmeans_clusters.png'), dpi=300)
+    
+    # Save statistics to CSV
+    stats_df = pd.DataFrame(cluster_stats)
+    stats_df.to_csv(os.path.join(report_dir, 'cluster_statistics.csv'), index=False)
+    
+    return df['cluster'], stats_df
+
+# Add the code to run kmeans clustering at the end of the script
+print("\n9. K-means Clustering Analysis")
+# Run k-means clustering on the filtered dataset
+df_clustering = df_filtered.copy()
+clusters, cluster_stats = plot_kmeans_clusters(
+    df_clustering, 
+    x_col="ROI_STANDARD_DEVIATION", 
+    y_col="EXPECTED_ROI", 
+    k=4,
+    report_dir=REPORT_DIR
+)
+
+print("K-means clustering completed. Results saved to visualization directory.")
+print(cluster_stats) 
