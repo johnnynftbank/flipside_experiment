@@ -1,0 +1,6 @@
+swapper,expected_roi,roi_standard_deviation,sharpe_ratio,win_loss_ratio,max_trade_proportion,max_token_roi,min_token_roi,roi_range,unique_tokens_traded,total_trades,first_trade_date,last_trade_date,trading_days
+0x8a7b1e64aadc71b12a15d83b982131a1d837d28d,3.87,7.52,0.515,2.5,0.15,15.72,-0.96,16.68,32,146,2025-01-03,2025-02-24,35
+0x3f5c36b92b96a7df3b0682efc31c4cd61f7e5b7f,2.41,3.89,0.619,3.2,0.08,8.45,-0.78,9.23,25,98,2025-01-05,2025-02-28,32
+0x6d12f5a93eb7a1bc1f8e29d2d0a0a8e4c27908e0,1.78,2.05,0.868,4.7,0.11,6.32,-0.55,6.87,19,87,2025-01-09,2025-02-26,28
+0xb123a4b56c78d9e0f1a2b3c4d5e6f789a0b1c2d3,1.25,1.62,0.772,3.8,0.09,4.95,-0.62,5.57,22,94,2025-01-12,2025-02-25,26
+0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b,-0.32,0.85,-0.376,0.6,0.27,1.25,-2.34,3.59,15,68,2025-01-18,2025-02-20,18 
