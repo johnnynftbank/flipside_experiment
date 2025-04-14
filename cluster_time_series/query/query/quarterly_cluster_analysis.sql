@@ -1,7 +1,7 @@
 /*
 밈 코인 투자자 군집 분석을 위한 분기별 데이터 수집 쿼리
 - 목적: 미분류 비율이 높은 문제 해결을 위해 분석 기간 확장
-- 방식: 특정 월의 거래자 샘플링 후 해당 거래자의 이전 3개월 데이터까지 포함하여 분석
+- 방식: 특정 월의 거래자 샘플링 후 해당 거래자의 이전 2개월 데이터까지 포함하여 분석 (총 3개월)
 
 사용 방법:
 - target_date 값만 원하는 월의 첫 날짜로 변경 (예: '2025-03-01')
@@ -15,35 +15,37 @@ WITH date_params AS (
     LAST_DAY(target_date) AS target_end_date,
     EXTRACT(YEAR FROM target_date) AS target_year,
     EXTRACT(MONTH FROM target_date) AS target_month,
-    DATEADD(month, -3, target_date) AS period_start_date,  -- 3개월 전 시작일
+    DATEADD(month, -2, target_date) AS period_start_date,  -- 2개월 전 시작일 (총 3개월)
     LAST_DAY(target_date) AS period_end_date                -- 대상 월 마지막일
 ),
 
-/* ============================= 1) 대상 월 밈 코인 거래자 추출 ============================= */
-target_month_traders AS (
+/* ============================= 1) 밈 코인 거래 전체 추출 ============================= */
+meme_coin_swaps AS (
     SELECT
-        fs.swapper
+        fs.*
     FROM solana.defi.fact_swaps fs
-    CROSS JOIN date_params
     WHERE fs.swap_program = 'pump.fun'
       AND (
           fs.swap_from_mint = 'So11111111111111111111111111111111111111112'
           OR fs.swap_to_mint = 'So11111111111111111111111111111111111111112'
       )
-      AND fs.block_timestamp BETWEEN date_params.target_date AND date_params.target_end_date
-    GROUP BY fs.swapper
 ),
 
-/* ============================= 2) 대상 월 거래자 중 조건 만족하는 지갑만 랜덤 추출 ============================= */
+/* ============================= 2) 대상 월의 거래자 중 조건 만족하는 지갑 랜덤 추출 ============================= */
 sampled_wallets AS (
-    SELECT 
-        tmt.swapper
-    FROM target_month_traders tmt
-    ORDER BY RANDOM()  -- 무작위 샘플링
-    LIMIT 5000         -- 5,000개 지갑 추출
+    SELECT
+        swapper,
+        COUNT(*) AS trade_count
+    FROM meme_coin_swaps
+    CROSS JOIN date_params
+    WHERE block_timestamp BETWEEN date_params.target_date AND date_params.target_end_date
+    GROUP BY swapper
+    HAVING trade_count BETWEEN 10 AND 1000  -- 거래 횟수 10-1000회
+    ORDER BY RANDOM()
+    LIMIT 10000  -- 10,000개 지갑 추출
 ),
 
-/* ============================= 3) 추출된 지갑의 4개월(대상 월+이전 3개월) 거래 정보 추출 ============================= */
+/* ============================= 3) 추출된 지갑의 3개월 거래 정보 추출 ============================= */
 raw_swaps AS (
     SELECT
         fs.*,
@@ -59,15 +61,10 @@ raw_swaps AS (
             WHEN fs.swap_from_mint = 'So11111111111111111111111111111111111111112' THEN fs.swap_to_amount
             ELSE fs.swap_from_amount
         END AS token_amount
-    FROM solana.defi.fact_swaps fs
+    FROM meme_coin_swaps fs
     JOIN sampled_wallets sw ON fs.swapper = sw.swapper
     CROSS JOIN date_params
-    WHERE fs.swap_program = 'pump.fun'
-      AND (
-          fs.swap_from_mint = 'So11111111111111111111111111111111111111112'
-          OR fs.swap_to_mint = 'So11111111111111111111111111111111111111112'
-      )
-      AND fs.block_timestamp BETWEEN date_params.period_start_date AND date_params.period_end_date
+    WHERE fs.block_timestamp BETWEEN date_params.period_start_date AND date_params.period_end_date
 ),
 
 /* ============================= 4) 필터링 조건 적용 ============================= */
@@ -76,8 +73,7 @@ active_wallets AS (
         swapper
     FROM raw_swaps
     GROUP BY swapper
-    HAVING COUNT(*) BETWEEN 10 AND 1000  -- 거래 횟수 10-1000회
-      AND COUNT(DISTINCT DATE(block_timestamp)) >= 5  -- 거래 기간 5일 이상
+    HAVING COUNT(DISTINCT DATE(block_timestamp)) >= 5  -- 거래 기간 5일 이상
       AND COUNT(DISTINCT CASE 
           WHEN swap_from_mint = 'So11111111111111111111111111111111111111112' THEN swap_to_mint
           ELSE swap_from_mint
