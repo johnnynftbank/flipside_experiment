@@ -73,7 +73,7 @@ active_wallets AS (
         swapper
     FROM raw_swaps
     GROUP BY swapper
-    HAVING COUNT(DISTINCT DATE(block_timestamp)) >= 5  -- 거래 기간 5일 이상
+    HAVING COUNT(DISTINCT DATE(block_timestamp)) >= 10  -- 거래 기간 5일 이상
       AND COUNT(DISTINCT CASE 
           WHEN swap_from_mint = 'So11111111111111111111111111111111111111112' THEN swap_to_mint
           ELSE swap_from_mint

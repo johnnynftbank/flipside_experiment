@@ -2,39 +2,57 @@
 월별 밈 코인 거래 데이터 분석 쿼리
 
 사용 방법:
-- 아래 두 개의 날짜 변수를 변경하여 원하는 월의 데이터를 추출
-- FROM_DATE: 해당 월의 첫 번째 날 (예: '2024-09-01')
-- TO_DATE: 해당 월의 마지막 날 (예: '2024-09-30')
-
-참고: 대용량 데이터를 처리하므로 한 번에 한 달씩 조회하는 것을 권장합니다.
+- 아래에서 start_date 값만 원하는 월의 첫 날짜로 변경 (예: '2024-09-01')
+- 나머지 날짜 관련 값들은 자동 계산됨
+- 각 월의 전체 데이터를 조회하여 조건을 만족하는 지갑 중 5,000개를 무작위 추출
 */
 
--- 조회할 월의 시작일과 종료일 설정
-SET FROM_DATE = '2024-09-01';
-SET TO_DATE = '2024-09-30';
+WITH date_params AS (
+  -- 여기서 start_date만 변경하면 나머지 날짜 관련 값은 자동 계산됨
+  SELECT 
+    '2024-09-01'::DATE AS start_date,
+    LAST_DAY(start_date) AS end_date,
+    EXTRACT(YEAR FROM start_date) AS year,
+    EXTRACT(MONTH FROM start_date) AS month
+),
 
-WITH /* ============================= 1) 밈 코인 거래 샘플링 & 필터링 ============================= */
+/* ============================= 1) 해당 월의 전체 밈 코인 거래 추출 ============================= */
 meme_coin_swaps AS (
     SELECT
         fs.*
     FROM solana.defi.fact_swaps fs
+    CROSS JOIN date_params
     WHERE fs.swap_program = 'pump.fun'
       AND (
           fs.swap_from_mint = 'So11111111111111111111111111111111111111112'
           OR fs.swap_to_mint = 'So11111111111111111111111111111111111111112'
       )
-      AND fs.block_timestamp BETWEEN $FROM_DATE AND $TO_DATE  -- 월별 필터링
+      AND fs.block_timestamp BETWEEN date_params.start_date AND date_params.end_date
 ),
-meme_coin_traders AS (
-    SELECT
-        swapper,
-        COUNT(*) AS trade_count
+
+/* ============================= 2) 조건을 만족하는 지갑 필터링 ============================= */
+active_wallets AS (
+    SELECT 
+        swapper
     FROM meme_coin_swaps
     GROUP BY swapper
-    HAVING trade_count BETWEEN 10 AND 1000
-    ORDER BY RANDOM()
-    LIMIT 5000  -- 요구사항에 맞게 5,000개 무작위 지갑 추출
+    HAVING COUNT(*) BETWEEN 10 AND 1000  -- 거래 횟수 10-1000회
+      AND COUNT(DISTINCT DATE(block_timestamp)) >= 5  -- 거래 기간 5일 이상
+      AND COUNT(DISTINCT CASE 
+          WHEN swap_from_mint = 'So11111111111111111111111111111111111111112' THEN swap_to_mint
+          ELSE swap_from_mint
+      END) >= 5  -- 서로 다른 밈 코인 5개 이상
 ),
+
+/* ============================= 3) 조건 만족 지갑 중 5,000개 무작위 추출 ============================= */
+sampled_wallets AS (
+    SELECT swapper
+    FROM active_wallets
+    ORDER BY RANDOM()  -- 무작위 순서로 정렬
+    LIMIT 5000  -- 5,000개 추출
+),
+
+/* ============================= 4) 추출된 지갑의 거래 정보 가져오기 ============================= */
 raw_swaps AS (
     SELECT
         fs.*,
@@ -51,22 +69,10 @@ raw_swaps AS (
             ELSE fs.swap_from_amount
         END AS token_amount
     FROM meme_coin_swaps fs
-    JOIN meme_coin_traders mt 
-        ON fs.swapper = mt.swapper
-),
-active_wallets AS (
-    SELECT 
-        swapper
-    FROM raw_swaps
-    GROUP BY swapper
-    HAVING COUNT(DISTINCT DATE(block_timestamp)) >= 5  -- 월 내에서 거래 기간 5일 이상
-      AND COUNT(DISTINCT CASE 
-          WHEN swap_from_mint = 'So11111111111111111111111111111111111111112' THEN swap_to_mint
-          ELSE swap_from_mint
-      END) >= 5  -- 월 내에서 서로 다른 밈 코인 5개 이상
+    JOIN sampled_wallets sw ON fs.swapper = sw.swapper
 ),
 
-/* ============================= 2) 토큰별 ROI 계산 ============================= */
+/* ============================= 5) 토큰별 ROI 계산 ============================= */
 token_performance AS (
     SELECT
         rs.swapper,
@@ -77,7 +83,6 @@ token_performance AS (
         SUM(CASE WHEN trade_type = 'BUY'  THEN sol_amount ELSE 0 END) AS total_buy,
         SUM(CASE WHEN trade_type = 'SELL' THEN sol_amount ELSE 0 END) AS total_sell
     FROM raw_swaps rs
-    WHERE rs.swapper IN (SELECT swapper FROM active_wallets)
     GROUP BY 
         rs.swapper,
         CASE 
@@ -101,7 +106,7 @@ token_roi AS (
       AND tp.total_sell > 0
 ),
 
-/* ============================= 3) ROI 구간화 & 기대수익률 계산 ============================= */
+/* ============================= 6) ROI 구간화 & 기대수익률 계산 ============================= */
 bucketed_roi AS (
     SELECT
         swapper,
@@ -153,7 +158,7 @@ wallet_expected_roi AS (
     GROUP BY bd.swapper
 ),
 
-/* ============================= 4) 토큰별 ROI 표준편차 계산 ============================= */
+/* ============================= 7) 토큰별 ROI 표준편차 계산 ============================= */
 roi_std_dev AS (
     SELECT
         tr.swapper,
@@ -163,7 +168,7 @@ roi_std_dev AS (
     GROUP BY tr.swapper
 ),
 
-/* ============================= 5) 지갑별 Sharpe Ratio 계산 ============================= */
+/* ============================= 8) 지갑별 Sharpe Ratio 계산 ============================= */
 sharpe_ratio AS (
     SELECT
         wr.swapper,
@@ -172,7 +177,7 @@ sharpe_ratio AS (
     JOIN roi_std_dev sd ON wr.swapper = sd.swapper
 ),
 
-/* ============================= 6) Win-to-Loss 비율 계산 ============================= */
+/* ============================= 9) Win-to-Loss 비율 계산 ============================= */
 win_loss_ratio AS (
     SELECT
         swapper,
@@ -183,7 +188,7 @@ win_loss_ratio AS (
     GROUP BY swapper
 ),
 
-/* ============================= 7) 최대 단일 거래 비중 계산 ============================= */
+/* ============================= 10) 최대 단일 거래 비중 계산 ============================= */
 max_trade_proportion AS (
     SELECT
         rs.swapper,
@@ -192,11 +197,10 @@ max_trade_proportion AS (
         MAX(rs.sol_amount) / NULLIF(SUM(rs.sol_amount), 0) AS max_trade_proportion
     FROM raw_swaps rs
     WHERE rs.trade_type = 'BUY'
-      AND rs.swapper IN (SELECT swapper FROM active_wallets)
     GROUP BY rs.swapper
 ),
 
-/* ============================= 8) 기타 지표 계산 ============================= */
+/* ============================= 11) 기타 지표 계산 ============================= */
 wallet_summary AS (
     SELECT
         rs.swapper,
@@ -209,14 +213,16 @@ wallet_summary AS (
         MIN(rs.block_timestamp) AS first_trade_date,
         MAX(rs.block_timestamp) AS last_trade_date,
         COUNT(DISTINCT DATE(rs.block_timestamp)) AS trading_days,
-        $FROM_DATE AS period_start_date,  -- 분석 기간 정보 추가
-        $TO_DATE AS period_end_date       -- 분석 기간 정보 추가
+        dp.start_date AS period_start_date,
+        dp.end_date AS period_end_date,
+        dp.year,
+        dp.month
     FROM raw_swaps rs
-    WHERE rs.swapper IN (SELECT swapper FROM active_wallets)
-    GROUP BY rs.swapper
+    CROSS JOIN date_params dp
+    GROUP BY rs.swapper, dp.start_date, dp.end_date, dp.year, dp.month
 ),
 
-/* ============================= 9) 최종 결과 집계 ============================= */
+/* ============================= 12) 최종 결과 집계 ============================= */
 final_results AS (
     SELECT
         ws.swapper,
@@ -230,10 +236,8 @@ final_results AS (
         ws.first_trade_date,
         ws.last_trade_date,
         ws.trading_days,
-        ws.period_start_date,
-        ws.period_end_date,
-        EXTRACT(YEAR FROM ws.period_start_date) AS year,
-        EXTRACT(MONTH FROM ws.period_start_date) AS month
+        ws.year,
+        ws.month
     FROM wallet_summary ws
     LEFT JOIN wallet_expected_roi wr ON ws.swapper = wr.swapper
     LEFT JOIN roi_std_dev sd ON ws.swapper = sd.swapper
